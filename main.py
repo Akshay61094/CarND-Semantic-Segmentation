@@ -32,10 +32,17 @@ def load_vgg(sess, vgg_path):
     vgg_layer3_out_tensor_name = 'layer3_out:0'
     vgg_layer4_out_tensor_name = 'layer4_out:0'
     vgg_layer7_out_tensor_name = 'layer7_out:0'
-    
-    return None, None, None, None, None
-tests.test_load_vgg(load_vgg, tf)
 
+    tf.save_model.loader.load(sess, [vgg_tag], vgg_path)
+    graph=tf.get_default_graph()
+    input_image=graph.get_tensor_by_name(vgg_input_tensor_name)
+    keep_prob = graph.get_tensor_by_name(vgg_keep_prob_tensor_name)
+    layer_3=  graph.get_tensor_by_name(vgg_layer3_out_tensor_name)
+    layer_4 = graph.get_tensor_by_name(vgg_layer4_out_tensor_name)
+    layer_7 = graph.get_tensor_by_name(vgg_layer7_out_tensor_name)
+
+    return input_image, keep_prob, layer_3, layer_4, layer_7
+tests.test_load_vgg(load_vgg, tf)
 
 def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     """
@@ -47,7 +54,46 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     :return: The Tensor for the last layer of output
     """
     # TODO: Implement function
-    return None
+
+    #layer 7 convolved 1x1
+    conv_1x1 = tf.layers.conv2d(vgg_layer7_out,num_classes,1,1,padding='same',
+                                kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
+                                kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3),)
+
+    #layer 7 upsampled twice
+    layer_7_upsampled =  tf.layers.conv2d_transpose(conv_1x1, filters=num_classes, kernel_size=(3, 3),
+                                                          strides=(2, 2), padding='same',
+                                                          kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
+                                                          kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+
+    # layer 4 convolved 1x1 to match the size to 2, so that it can be added to 7th layer
+    layer4_1x1 = tf.layers.conv2d(vgg_layer4_out, filters=num_classes, kernel_size=(1, 1), strides=(1, 1),
+                                            padding='same',kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
+                                            kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+
+    # resized layer 4 and 7 combined
+    layer_4_7_combined = tf.add(layer_7_upsampled, layer4_1x1)
+
+    layer47_upsampled = tf.layers.conv2d_transpose(layer_4_7_combined, filters=num_classes, kernel_size=(3, 3),
+                                                   strides=(2, 2), name="layer47_upsampled", padding='same',
+                                                   kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
+                                                   kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+
+    # layer 4 convolved 1x1 to match the size to 2, so that it can be added to 8th layer
+    layer3_1x1_out = tf.layers.conv2d(vgg_layer3_out, filters=num_classes, kernel_size=(1, 1), strides=(1, 1),
+                                      name="new_layer3_1x1_out",
+                                      kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
+                                      kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+
+    layer_3_8_combined = tf.add(layer3_1x1_out, layer47_upsampled)
+
+    layer_3_8_combined_upsampled = tf.layers.conv2d_transpose(layer_3_8_combined, filters=num_classes, kernel_size=(16, 16),
+                                                             strides=(8, 8), padding='same',name="final_layer_upsampled_8x",
+                                                             kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
+                                                             kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+
+    return layer_3_8_combined_upsampled
+
 tests.test_layers(layers)
 
 
@@ -61,7 +107,17 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
     :return: Tuple of (logits, train_op, cross_entropy_loss)
     """
     # TODO: Implement function
-    return None, None, None
+    # make logits a 2D tensor where each row represents a pixel and each column a class
+    logits = tf.reshape(nn_last_layer, (-1, num_classes))
+    correct_label = tf.reshape(correct_label, (-1, num_classes))
+    # define loss function
+    cross_entropy_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=correct_label))
+    # define training operation
+    optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+    train_op = optimizer.minimize(cross_entropy_loss)
+
+    return logits, train_op, cross_entropy_loss
+    
 tests.test_optimize(optimize)
 
 
