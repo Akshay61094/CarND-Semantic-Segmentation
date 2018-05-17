@@ -90,7 +90,7 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     layer_3_8_combined_upsampled = tf.layers.conv2d_transpose(layer_3_8_combined, filters=num_classes, kernel_size=(16, 16),
                                                              strides=(8, 8), padding='same',name="final_layer_upsampled_8x",
                                                              kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
-                                                             kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+                                                             )
 
     return layer_3_8_combined_upsampled
 
@@ -145,8 +145,8 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
         print("EPOCH {} ...".format(i + 1))
         for image, label in get_batches_fn(batch_size):
             _, loss = sess.run([train_op, cross_entropy_loss],
-                               feed_dict={input_image: image, correct_label: label, keep_prob: 0.7,
-                                          learning_rate: 0.0002})
+                               feed_dict={input_image: image, correct_label: label, keep_prob: 0.6,
+                                          learning_rate: 0.0005})
             print("Loss: = {:.3f}".format(loss))
         print()
 
@@ -177,8 +177,8 @@ def run():
         #  https://datascience.stackexchange.com/questions/5224/how-to-prepare-augment-images-for-neural-network
 
         # TODO: Build NN using load_vgg, layers, and optimize function
-        epochs = 10
-        batch_size = 10
+        epochs = 20
+        batch_size = 5
 
         # TF placeholders
         correct_label = tf.placeholder(tf.int32, [None, None, None, num_classes], name='correct_label')
