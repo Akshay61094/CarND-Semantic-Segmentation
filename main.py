@@ -64,7 +64,7 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     layer_7_upsampled =  tf.layers.conv2d_transpose(conv_1x1, filters=num_classes, kernel_size=(3, 3),
                                                           strides=(2, 2), padding='same',
                                                           kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
-                                                          kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+                                                         )
 
     # layer 4 convolved 1x1 to match the size to 2, so that it can be added to 7th layer
     layer4_1x1 = tf.layers.conv2d(vgg_layer4_out, filters=num_classes, kernel_size=(1, 1), strides=(1, 1),
@@ -90,7 +90,7 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     layer_3_8_combined_upsampled = tf.layers.conv2d_transpose(layer_3_8_combined, filters=num_classes, kernel_size=(16, 16),
                                                              strides=(8, 8), padding='same',name="final_layer_upsampled_8x",
                                                              kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
-                                                             )
+                                                             kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
 
     return layer_3_8_combined_upsampled
 
