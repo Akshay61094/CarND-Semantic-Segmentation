@@ -57,8 +57,8 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
 
     #layer 7 convolved 1x1
     conv_1x1 = tf.layers.conv2d(vgg_layer7_out,num_classes,1,1,padding='same',
-                                kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
-                                kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3),)
+                                kernel_initializer=tf.truncated_normal_initializer(stddev=0.01)
+                                )
 
     #layer 7 upsampled twice
     layer_7_upsampled =  tf.layers.conv2d_transpose(conv_1x1, filters=num_classes, kernel_size=(3, 3),
@@ -68,22 +68,22 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
 
     # layer 4 convolved 1x1 to match the size to 2, so that it can be added to 7th layer
     layer4_1x1 = tf.layers.conv2d(vgg_layer4_out, filters=num_classes, kernel_size=(1, 1), strides=(1, 1),
-                                            padding='same',kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
-                                            kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+                                            padding='same',kernel_initializer=tf.truncated_normal_initializer(stddev=0.01)
+                                            )
 
     # resized layer 4 and 7 combined
     layer_4_7_combined = tf.add(layer_7_upsampled, layer4_1x1)
 
     layer47_upsampled = tf.layers.conv2d_transpose(layer_4_7_combined, filters=num_classes, kernel_size=(3, 3),
                                                    strides=(2, 2), name="layer47_upsampled", padding='same',
-                                                   kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
-                                                   kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+                                                   kernel_initializer=tf.truncated_normal_initializer(stddev=0.01)
+                                                   )
 
     # layer 4 convolved 1x1 to match the size to 2, so that it can be added to 8th layer
     layer3_1x1_out = tf.layers.conv2d(vgg_layer3_out, filters=num_classes, kernel_size=(1, 1), strides=(1, 1),
                                       name="new_layer3_1x1_out",
-                                      kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
-                                      kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+                                      kernel_initializer=tf.truncated_normal_initializer(stddev=0.01)
+                                     )
 
     layer_3_8_combined = tf.add(layer3_1x1_out, layer47_upsampled)
 
@@ -143,12 +143,18 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
 
     for i in range(epochs):
         print("EPOCH {} ...".format(i + 1))
+        tot_loss=0.0
+        batch_count=0
         for image, label in get_batches_fn(batch_size):
             _, loss = sess.run([train_op, cross_entropy_loss],
                                feed_dict={input_image: image, correct_label: label, keep_prob: 0.6,
                                           learning_rate: 0.0005})
-            print("Loss: = {:.3f}".format(loss))
-        print()
+            batch_count+=1
+            total_loss+=loss
+            print("=")
+         print()
+         print("Avg loss: = {:.3f}".format(tot_loss/batch_count))
+        
 
 tests.test_train_nn(train_nn)
 
