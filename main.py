@@ -57,33 +57,33 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
 
     #layer 7 convolved 1x1
     conv_1x1 = tf.layers.conv2d(vgg_layer7_out,num_classes,1,1,padding='same',
-                                kernel_initializer=tf.truncated_normal_initializer(stddev=0.01)
-                                )
+                                kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
+                                kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3),)
 
     #layer 7 upsampled twice
     layer_7_upsampled =  tf.layers.conv2d_transpose(conv_1x1, filters=num_classes, kernel_size=(3, 3),
                                                           strides=(2, 2), padding='same',
                                                           kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
-                                                         )
+                                                          kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
 
     # layer 4 convolved 1x1 to match the size to 2, so that it can be added to 7th layer
     layer4_1x1 = tf.layers.conv2d(vgg_layer4_out, filters=num_classes, kernel_size=(1, 1), strides=(1, 1),
-                                            padding='same',kernel_initializer=tf.truncated_normal_initializer(stddev=0.01)
-                                            )
+                                            padding='same',kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
+                                            kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
 
     # resized layer 4 and 7 combined
     layer_4_7_combined = tf.add(layer_7_upsampled, layer4_1x1)
 
     layer47_upsampled = tf.layers.conv2d_transpose(layer_4_7_combined, filters=num_classes, kernel_size=(3, 3),
                                                    strides=(2, 2), name="layer47_upsampled", padding='same',
-                                                   kernel_initializer=tf.truncated_normal_initializer(stddev=0.01)
-                                                   )
+                                                   kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
+                                                   kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
 
     # layer 4 convolved 1x1 to match the size to 2, so that it can be added to 8th layer
     layer3_1x1_out = tf.layers.conv2d(vgg_layer3_out, filters=num_classes, kernel_size=(1, 1), strides=(1, 1),
                                       name="new_layer3_1x1_out",
-                                      kernel_initializer=tf.truncated_normal_initializer(stddev=0.01)
-                                     )
+                                      kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
+                                      kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
 
     layer_3_8_combined = tf.add(layer3_1x1_out, layer47_upsampled)
 
@@ -147,8 +147,8 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
         batch_count=0
         for image, label in get_batches_fn(batch_size):
             _, loss = sess.run([train_op, cross_entropy_loss],
-                               feed_dict={input_image: image, correct_label: label, keep_prob: 0.5,
-                                          learning_rate: 0.0008})
+                               feed_dict={input_image: image, correct_label: label, keep_prob: 0.4,
+                                          learning_rate: 0.001})
             batch_count+=1
             tot_loss+=loss
             print("epoch no",i,"batch_number",batch_count,"loss = {:.3f}".format(loss))
@@ -183,8 +183,8 @@ def run():
         #  https://datascience.stackexchange.com/questions/5224/how-to-prepare-augment-images-for-neural-network
 
         # TODO: Build NN using load_vgg, layers, and optimize function
-        epochs = 15
-        batch_size = 5
+        epochs = 12
+        batch_size = 4
 
         # TF placeholders
         correct_label = tf.placeholder(tf.int32, [None, None, None, num_classes], name='correct_label')
