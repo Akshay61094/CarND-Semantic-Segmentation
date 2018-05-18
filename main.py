@@ -150,10 +150,10 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
                                feed_dict={input_image: image, correct_label: label, keep_prob: 0.6,
                                           learning_rate: 0.0005})
             batch_count+=1
-            total_loss+=loss
-            print("=")
-         print()
-         print("Avg loss: = {:.3f}".format(tot_loss/batch_count))
+            tot_loss+=loss
+            print("epoch no",i,"batch_number",batch_count,"loss = {:.3f}".format(loss))
+        print()
+        print("Avg loss: = {:.3f}".format(tot_loss/batch_count))
         
 
 tests.test_train_nn(train_nn)
